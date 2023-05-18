@@ -5,7 +5,7 @@
 * [Technologies](#Technologies)
 * [Requirmenets](#Requirements)
 * [Examples](#Examples)
-* [External sources](#External sources)
+* [External sources](#External_sources)
 
 ## Logic applied in application
 Model uczenia maszynowego - system rekomendacyjny oparty o model filtrowania kolaboratywnego.
@@ -35,11 +35,11 @@ Run `model_analysis.ipynb` to analyze models AUC and duration.
 
 ### AUC metrics comparision
 
-![AUC](../AUC.png)
+![AUC](AUC.png)
 
 ### Duration comparision
 
-![Duration](../duration.png)
+![Duration](duration.png)
 
 Run `recommendations_generation.ipynb` to retrieve predictions for all or given users.
 
