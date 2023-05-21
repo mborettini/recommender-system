@@ -2,17 +2,104 @@
 from lightfm.data import Dataset
 from lightfm.lightfm import LightFM
 from lightfm.evaluation import auc_score
+import numpy as np
+import pandas as pd
+import psycopg2
 from scipy.sparse import coo_matrix
 
+import csv
 import gzip
 import json
 import logging as log
 from os import listdir
-import numpy as np
-from pandas import DataFrame
 import pickle
 import time
 from typing import Optional
+
+def create_table_in_postgres_db(sql):
+    conn, cursor = _establish_db_connection()
+    cursor.execute(sql)
+    conn.commit()
+    conn.close()
+    log.info('Query executed')
+
+
+def _establish_db_connection():
+    conn = psycopg2.connect(
+        database="postgres", user='postgres', password='mysecretpassword', host='127.0.0.1', port='5432'
+    )
+    return conn, conn.cursor()
+
+
+def load_input_data_from_csv_to_postgres_table(
+        table_name: str,
+        path: str
+) -> None:
+    """Loads data from file path to indicated table in database
+
+    Args:
+        table_name (str): Dataset used for model training.
+        path (str): Path to file which supposed to be inserted to db.
+
+    Returns:
+        None
+    """
+    conn, cursor = _establish_db_connection()
+    cursor.execute(f'SELECT count(1) FROM {table_name}')
+    result = cursor.fetchall()
+
+    sql = "INSERT INTO ratings VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" if table_name == 'ratings'\
+           else "INSERT INTO items_metadata VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+
+    if result != 0:
+        counter = 0
+        with open(path, 'r') as f:
+            reader = csv.reader(f)
+            next(reader) # Skip the header row.
+            for row in reader:
+                cursor.execute(sql, row)
+                counter += 1
+        conn.commit()
+        conn.close()
+        log.info(f'Loaded {counter} rows to {table_name} table')
+    else:
+        log.info(f"Table {table_name} is not empty")
+
+
+def load_recommendations_data_from_csv_to_postgres_table(
+        model_name: str,
+        path: str,
+        version: int,
+) -> None:
+    """Loads data from path to indicated table in database.
+
+    Args:
+        model_name (str): Model name.
+        path (str): Path to file which supposed to be inserted to db.
+        version (int): Model version.
+
+    Returns:
+        None
+    """
+    conn, cursor = _establish_db_connection()
+    cursor.execute(f'''SELECT count(1) FROM recommendations
+                       WHERE model = {model_name} AND model_version = {version}''')
+    result = cursor.fetchall()
+
+    if result != 0:
+        counter = 0
+        with open(path, 'r') as f:
+            reader = csv.reader(f)
+            next(reader) # Skip the header row.
+            for row in reader:
+                cursor.execute("INSERT INTO recommendations VALUES (%s, %s, %s, %s)", row)
+                counter += 1
+        conn.commit()
+        conn.close()
+        log.info(f'Loaded {counter} rows to recommendations table')
+    else:
+        log.info(f"Data for {model_name}_{version} are already in the recommendations table")
+
 
 
 def generate_recommendations(
@@ -64,7 +151,11 @@ def get_newest_existing_model_version(path: str) -> int:
     Returns:
         int: The newest model version expressed as a number.
     """
-    return int(max(listdir(path))[-5])
+    try:
+        version = int(max(listdir(path))[-5])
+    except:
+        version = 1
+    return version
 
 
 def pickle_model_results(
@@ -110,7 +201,7 @@ def read_data_from_gziped_file(path: str) -> list:
     file_name = path.split('/')[-1]
     log.info(f"Reading data from file {file_name}...")
     data = []
-    with gzip.open(path) as f:
+    with gzip.open(path, 'rt') as f:
         for l in f:
             l = l.strip().replace("\\n", "")
             data.append(json.loads(l))
@@ -136,8 +227,35 @@ def save_data_to_pkl(
     log.info(f'File {path} saved')
 
 
+def save_recommendations_to_csv(
+        model_name: str,
+        path: str,
+        recommendations: dict,
+        version: int
+) -> None:
+    """Saves recommendations to csv file.
+
+    Args:
+        model_name (str): Name of directory in which data file shoul be stored.
+        path (str): Path under which model components will be saved.
+        recommendations (dict[str, list]): Distionary of user ids with list of recommended items.
+        version (int): Model version.
+
+    Returns:
+        None.
+    """
+    recommendations_pd = pd.DataFrame(list(recommendations.items()), columns=["user_id", "recommendations"])
+    recommendations_pd["model"] = model_name
+    recommendations_pd["model_version"] = version
+    recommendations_pd.to_csv(path, index=False, header=True, escapechar='\\'
+    )
+    log.info("File saved")
+
+    recommendations_pd.sample(n=5, ignore_index=True)
+
+
 def select_random_users(
-        df: DataFrame,
+        df: pd.DataFrame,
         column: str,
         n: int = 3
 ) -> list:
@@ -186,12 +304,8 @@ def train_lightfm_model(
 
 
 def unpickle(
-        # file_type: str,
-        # model_name: str,
-        path: str,
-        # version: int
+        path: str
 ):
-    # path = f"{path}/{file_type}_v{version}.pkl" if file_type == "dataset" else f'{path}/{model_name}_v{version}.pkl'
     file = open(path, 'rb')
     data = pickle.load(file)
     file.close()
