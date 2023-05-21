@@ -16,7 +16,17 @@ import pickle
 import time
 from typing import Optional
 
-def create_table_in_postgres_db(sql):
+def create_table_in_postgres_db(sql: str):
+    """Initializes connection with database.
+       Executes provided SQL query, which is supposed to create new table in database.
+       Closes db connection.
+
+    Args:
+        sql (str): SQL query to be executed.
+
+    Returns:
+        None
+    """
     conn, cursor = _establish_db_connection()
     cursor.execute(sql)
     conn.commit()
@@ -24,21 +34,14 @@ def create_table_in_postgres_db(sql):
     log.info('Query executed')
 
 
-def _establish_db_connection():
-    conn = psycopg2.connect(
-        database="postgres", user='postgres', password='mysecretpassword', host='127.0.0.1', port='5432'
-    )
-    return conn, conn.cursor()
-
-
 def load_input_data_from_csv_to_postgres_table(
         table_name: str,
         path: str
 ) -> None:
-    """Loads data from file path to indicated table in database
+    """Loads data from file path to indicated table in database.
 
     Args:
-        table_name (str): Dataset used for model training.
+        table_name (str): Name of table to which data should be loaded.
         path (str): Path to file which supposed to be inserted to db.
 
     Returns:
@@ -71,11 +74,11 @@ def load_recommendations_data_from_csv_to_postgres_table(
         path: str,
         version: int,
 ) -> None:
-    """Loads data from path to indicated table in database.
+    """Loads data from indicated path to recommendations table.
 
     Args:
         model_name (str): Model name.
-        path (str): Path to file which supposed to be inserted to db.
+        path (str): Path to file with recommendations which supposed to be inserted to db.
         version (int): Model version.
 
     Returns:
@@ -101,7 +104,6 @@ def load_recommendations_data_from_csv_to_postgres_table(
         log.info(f"Data for {model_name}_{version} are already in the recommendations table")
 
 
-
 def generate_recommendations(
         dataset: Dataset,
         item_ids: list[str],
@@ -113,8 +115,8 @@ def generate_recommendations(
     Args:
         dataset (Dataset): Dataset used for model training.
         item_ids (list[str]): List of item ids.
-        model (LightFM): LightFm model.
-        item_ids (list[str]): List of user ids.
+        model (LightFM): LightFM model.
+        user_ids (list[str]): List of user ids.
 
     Returns:
         dict[str, list]: Distionary of user ids with list of recommended items.
@@ -141,6 +143,7 @@ def generate_recommendations(
         recommended_items = [_map_int_to_ext_ids(iid_map, item) for item in top_items[:3]]
         recommendations[_map_int_to_ext_ids(uid_map, user)] = recommended_items
     return recommendations
+
 
 def get_newest_existing_model_version(path: str) -> int:
     """Gets the newest existing version of model located under given path.
@@ -189,7 +192,9 @@ def pickle_model_results(
     log.info("Done")
 
 
-def read_data_from_gziped_file(path: str) -> list:
+def read_data_from_gziped_file(
+        path: str
+) -> list:
     """Returns data retrieved from gziped file located under given path.
 
     Args:
@@ -216,7 +221,7 @@ def save_data_to_pkl(
     """Saves data to pickle file.
 
     Args:
-        directory (str): Name of directory in which data file shoul be stored.
+        path (str): Path under which pickle file will be saved.
         data (object): Data to be written to file.
 
     Returns:
@@ -236,8 +241,8 @@ def save_recommendations_to_csv(
     """Saves recommendations to csv file.
 
     Args:
-        model_name (str): Name of directory in which data file shoul be stored.
-        path (str): Path under which model components will be saved.
+        model_name (str): Model name.
+        path (str): Path under which file will be saved.
         recommendations (dict[str, list]): Distionary of user ids with list of recommended items.
         version (int): Model version.
 
@@ -283,7 +288,7 @@ def train_lightfm_model(
 
     Args:
         epochs (int): Number of epochs.
-        model (LightFM): LightFm model.
+        model (LightFM): LightFM model.
         model_name (str): Model name.
         test (coo_matrix): Test dataset.
         train (coo_matrix): Train dataset.
@@ -306,6 +311,14 @@ def train_lightfm_model(
 def unpickle(
         path: str
 ):
+    """Loads data from pickle file.
+
+    Args:
+        path (str) Path under which file for unpickling is located.
+
+    Returns:
+        data (object): Unpickled data.
+    """
     file = open(path, 'rb')
     data = pickle.load(file)
     file.close()
@@ -329,3 +342,14 @@ def _map_int_to_ext_ids(
     for ext_id, int_id in mapping.items():
         if int_id == searched_id:
             return ext_id
+
+def _establish_db_connection():
+    """Private method which opens connection to database.
+
+    Returns:
+        None
+    """
+    conn = psycopg2.connect(
+        database="postgres", user='postgres', password='mysecretpassword', host='127.0.0.1', port='5432'
+    )
+    return conn, conn.cursor()
