@@ -86,7 +86,7 @@ def load_recommendations_data_from_csv_to_postgres_table(
     """
     conn, cursor = _establish_db_connection()
     cursor.execute(f'''SELECT count(1) FROM recommendations
-                       WHERE model = {model_name} AND model_version = {version}''')
+                       WHERE model = '{model_name}' AND model_version = {version}''')
     result = cursor.fetchall()
 
     if result != 0:
