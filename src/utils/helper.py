@@ -108,9 +108,9 @@ def generate_recommendations(
         dataset: Dataset,
         item_ids: list[str],
         model: LightFM,
-        user_ids: Optional[list[str]] = None
+        user_ids: list[str] = None
 ) -> dict:
-    """Generates recommendations based on indicated model, for all or selected users.
+    """Generates recommendations based on indicated model, for given users list.
 
     Args:
         dataset (Dataset): Dataset used for model training.
