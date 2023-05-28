@@ -124,8 +124,7 @@ def generate_recommendations(
     uid_map, _, iid_map, _ = dataset.mapping()
 
     if user_ids is None:
-        users = [i for i in range (0, len(user_ids))]
-        user_array = users
+        user_array = [i for i in range (0, len(user_ids))]
     else:
         user_array = [uid_map[user] for user in user_ids]
 
