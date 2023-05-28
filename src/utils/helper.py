@@ -14,7 +14,6 @@ import logging as log
 from os import listdir
 import pickle
 import time
-from typing import Optional
 
 def create_table_in_postgres_db(sql: str):
     """Initializes connection with database.
@@ -51,8 +50,8 @@ def load_input_data_from_csv_to_postgres_table(
     cursor.execute(f'SELECT count(1) FROM {table_name}')
     result = cursor.fetchall()
 
-    sql = "INSERT INTO ratings VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" if table_name == 'ratings'\
-           else "INSERT INTO items_metadata VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    sql = 'INSERT INTO ratings VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)' if table_name == 'ratings'\
+           else 'INSERT INTO items_metadata VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
     if result != 0:
         counter = 0
@@ -66,7 +65,7 @@ def load_input_data_from_csv_to_postgres_table(
         conn.close()
         log.info(f'Loaded {counter} rows to {table_name} table')
     else:
-        log.info(f"Table {table_name} is not empty")
+        log.info(f'Table {table_name} is not empty')
 
 
 def load_recommendations_data_from_csv_to_postgres_table(
@@ -95,13 +94,13 @@ def load_recommendations_data_from_csv_to_postgres_table(
             reader = csv.reader(f)
             next(reader) # Skip the header row.
             for row in reader:
-                cursor.execute("INSERT INTO recommendations VALUES (%s, %s, %s, %s)", row)
+                cursor.execute('INSERT INTO recommendations VALUES (%s, %s, %s, %s)', row)
                 counter += 1
         conn.commit()
         conn.close()
         log.info(f'Loaded {counter} rows to recommendations table')
     else:
-        log.info(f"Data for {model_name}_{version} are already in the recommendations table")
+        log.info(f'Data for {model_name}_{version} are already in the recommendations table')
 
 
 def generate_recommendations(
@@ -183,12 +182,22 @@ def pickle_model_results(
     Returns:
         None.
     """
+<<<<<<< HEAD
     log.info(f"Saving {model_name}_v{version} components to pickle file...")
     save_data_to_pkl(f"{path}/{model_name}_v{version}.pkl", model)
     save_data_to_pkl(f"{path}/{model_name}_auc_v{version}.pkl", auc)
     save_data_to_pkl(f"{path}/{model_name}_duration_v{version}.pkl", duration)
     save_data_to_pkl(f"{path}/dataset_v{version}.pkl", dataset)
     log.info("Done")
+=======
+    log.info(f'Saving {model_name}_v{version} components to pickle file...')
+    save_data_to_pkl(f'{path}/{model_name}_v{version}.pkl', model)
+    save_data_to_pkl(f'{path}/{model_name}_auc_v{version}.pkl', auc)
+    save_data_to_pkl(f'{path}/{model_name}_precision_at_k_v{version}.pkl', precision_at_k)
+    save_data_to_pkl(f'{path}/{model_name}_duration_v{version}.pkl', duration)
+    save_data_to_pkl(f'{path}/dataset_v{version}.pkl', dataset)
+    log.info('Done')
+>>>>>>> 801c093 (styles: unification of quotation marks)
 
 
 def read_data_from_gziped_file(
@@ -203,13 +212,13 @@ def read_data_from_gziped_file(
         list[dict]: List of dictionaries, which represent file rows.
     """
     file_name = path.split('/')[-1]
-    log.info(f"Reading data from file {file_name}...")
+    log.info(f'Reading data from file {file_name}...')
     data = []
     with gzip.open(path, 'rt') as f:
         for l in f:
-            l = l.strip().replace("\\n", "")
+            l = l.strip().replace('\\n', '')
             data.append(json.loads(l))
-    log.info(f"Retrieved {len(data)} records from file {file_name}")
+    log.info(f'Retrieved {len(data)} records from file {file_name}')
     return data
 
 
@@ -248,12 +257,12 @@ def save_recommendations_to_csv(
     Returns:
         None.
     """
-    recommendations_pd = pd.DataFrame(list(recommendations.items()), columns=["user_id", "recommendations"])
-    recommendations_pd["model"] = model_name
-    recommendations_pd["model_version"] = version
+    recommendations_pd = pd.DataFrame(list(recommendations.items()), columns=['user_id', 'recommendations'])
+    recommendations_pd['model'] = model_name
+    recommendations_pd['model_version'] = version
     recommendations_pd.to_csv(path, index=False, header=True, escapechar='\\'
     )
-    log.info("File saved")
+    log.info('File saved')
 
     recommendations_pd.sample(n=5, ignore_index=True)
 
@@ -303,8 +312,13 @@ def train_lightfm_model(
         model_duration.append(time.time() - start)
         model_auc.append(auc_score(model, test).mean())
 
+<<<<<<< HEAD
     log.info(f"Model {model_name} has been trained in {epochs} epochs")
     return model_auc, model_duration
+=======
+    log.info(f'Model {model_name} has been trained in {epochs} epochs')
+    return model_auc, model_precision_at_k, model_duration
+>>>>>>> 801c093 (styles: unification of quotation marks)
 
 
 def unpickle(
@@ -349,6 +363,6 @@ def _establish_db_connection():
         None
     """
     conn = psycopg2.connect(
-        database="postgres", user='postgres', password='mysecretpassword', host='127.0.0.1', port='5432'
+        database='postgres', user='postgres', password='mysecretpassword', host='127.0.0.1', port='5432'
     )
     return conn, conn.cursor()
