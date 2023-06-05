@@ -182,22 +182,12 @@ def pickle_model_results(
     Returns:
         None.
     """
-<<<<<<< HEAD
-    log.info(f"Saving {model_name}_v{version} components to pickle file...")
-    save_data_to_pkl(f"{path}/{model_name}_v{version}.pkl", model)
-    save_data_to_pkl(f"{path}/{model_name}_auc_v{version}.pkl", auc)
-    save_data_to_pkl(f"{path}/{model_name}_duration_v{version}.pkl", duration)
-    save_data_to_pkl(f"{path}/dataset_v{version}.pkl", dataset)
-    log.info("Done")
-=======
     log.info(f'Saving {model_name}_v{version} components to pickle file...')
     save_data_to_pkl(f'{path}/{model_name}_v{version}.pkl', model)
     save_data_to_pkl(f'{path}/{model_name}_auc_v{version}.pkl', auc)
-    save_data_to_pkl(f'{path}/{model_name}_precision_at_k_v{version}.pkl', precision_at_k)
     save_data_to_pkl(f'{path}/{model_name}_duration_v{version}.pkl', duration)
     save_data_to_pkl(f'{path}/dataset_v{version}.pkl', dataset)
     log.info('Done')
->>>>>>> 801c093 (styles: unification of quotation marks)
 
 
 def read_data_from_gziped_file(
@@ -258,6 +248,7 @@ def save_recommendations_to_csv(
         None.
     """
     recommendations_pd = pd.DataFrame(list(recommendations.items()), columns=['user_id', 'recommendations'])
+    recommendations_pd['recommendations'] = [','.join(map(str, l)) for l in recommendations_pd['recommendations']]
     recommendations_pd['model'] = model_name
     recommendations_pd['model_version'] = version
     recommendations_pd.to_csv(path, index=False, header=True, escapechar='\\'
@@ -312,13 +303,8 @@ def train_lightfm_model(
         model_duration.append(time.time() - start)
         model_auc.append(auc_score(model, test).mean())
 
-<<<<<<< HEAD
-    log.info(f"Model {model_name} has been trained in {epochs} epochs")
-    return model_auc, model_duration
-=======
     log.info(f'Model {model_name} has been trained in {epochs} epochs')
-    return model_auc, model_precision_at_k, model_duration
->>>>>>> 801c093 (styles: unification of quotation marks)
+    return model_auc, model_duration
 
 
 def unpickle(
